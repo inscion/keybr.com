@@ -4,16 +4,21 @@ import { type CodePoint } from "@keybr/unicode";
 import { type Target } from "./target.ts";
 
 const ACCURACY_WINDOW_ATTEMPTS = 200;
+const ACCURACY_WINDOW_RESULTS = 200;
 
 export function recentAccuracy(
   samples: readonly KeySample[],
   maxAttempts = ACCURACY_WINDOW_ATTEMPTS,
+  minSampleIndex = 0,
 ): { accuracy: number | null; attempts: number } {
   let hitCount = 0;
   let missCount = 0;
 
   for (let index = samples.length - 1; index >= 0; index -= 1) {
     const sample = samples[index];
+    if (sample.index < minSampleIndex) {
+      break;
+    }
     hitCount += sample.hitCount;
     missCount += sample.missCount;
     if (hitCount + missCount >= maxAttempts) {
@@ -29,10 +34,18 @@ export function recentAccuracy(
 }
 
 export class LessonKey implements KeyStats {
-  static from(keyStats: KeyStats, target: Target): LessonKey {
+  static from(
+    keyStats: KeyStats,
+    target: Target,
+    resultCount: number | null = null,
+  ): LessonKey {
     const { letter, samples, timeToType, bestTimeToType } = keyStats;
+    const minSampleIndex =
+      resultCount == null
+        ? 0
+        : Math.max(0, resultCount - ACCURACY_WINDOW_RESULTS);
     const { accuracy: recentAccuracyValue, attempts: recentAttempts } =
-      recentAccuracy(samples);
+      recentAccuracy(samples, ACCURACY_WINDOW_ATTEMPTS, minSampleIndex);
     return new LessonKey({
       letter,
       samples,
@@ -133,7 +146,7 @@ export class LessonKeys implements Iterable<LessonKey> {
   static includeAll(keyStatsMap: KeyStatsMap, target: Target): LessonKeys {
     return new LessonKeys(
       [...keyStatsMap].map((keyStats) =>
-        LessonKey.from(keyStats, target).asIncluded(),
+        LessonKey.from(keyStats, target, keyStatsMap.results.length).asIncluded(),
       ),
     );
   }
