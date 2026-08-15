@@ -1,0 +1,65 @@
+import { test } from "node:test";
+import { Layout, loadKeyboard } from "@keybr/keyboard";
+import { FakePhoneticModel } from "@keybr/phonetic-model";
+import { Settings } from "@keybr/settings";
+import { equal } from "rich-assert";
+import { fakeKeyStatsMap, printLessonKeys } from "./fakes.ts";
+import { FocusMode } from "./focusmode.ts";
+import { GuidedLesson } from "./guided.ts";
+import { lessonProps } from "./settings.ts";
+
+test("focus least accurate key after all letters are unlocked", () => {
+  const settings = new Settings()
+    .set(lessonProps.guided.focusMode, FocusMode.ACCURACY)
+    .set(lessonProps.guided.targetAccuracy, 0.985);
+  const keyboard = loadKeyboard(Layout.EN_US);
+  const model = new FakePhoneticModel();
+  const lesson = new GuidedLesson(settings, keyboard, model, []);
+  const letters = model.letters;
+
+  const lessonKeys = lesson.update(
+    fakeKeyStatsMap(settings, [
+      [letters[0], 1.1, 1.1, [99, 1]],
+      [letters[1], 1.1, 1.1, [92, 8]],
+      [letters[2], 1.1, 1.1, [96, 4]],
+      [letters[3], 1.1, 1.1, [100, 0]],
+      [letters[4], 1.1, 1.1, [100, 0]],
+      [letters[5], 1.1, 1.1, [100, 0]],
+      [letters[6], 1.1, 1.1, [100, 0]],
+      [letters[7], 1.1, 1.1, [100, 0]],
+      [letters[8], 1.1, 1.1, [100, 0]],
+      [letters[9], 1.1, 1.1, [100, 0]],
+    ]),
+  );
+
+  equal(printLessonKeys(lessonKeys), "A[B]CDEFGHIJ");
+});
+
+test("ignore inaccurate keys until enough attempts are observed", () => {
+  const settings = new Settings()
+    .set(lessonProps.guided.focusMode, FocusMode.ACCURACY)
+    .set(lessonProps.guided.targetAccuracy, 0.985);
+  const keyboard = loadKeyboard(Layout.EN_US);
+  const model = new FakePhoneticModel();
+  const lesson = new GuidedLesson(settings, keyboard, model, []);
+  const letters = model.letters;
+
+  const lessonKeys = lesson.update(
+    fakeKeyStatsMap(settings, [
+      [letters[0], 0.8, 1.1, [10, 10]],
+      [letters[1], 1.1, 1.1, [100, 0]],
+      [letters[2], 1.1, 1.1, [100, 0]],
+      [letters[3], 1.1, 1.1, [100, 0]],
+      [letters[4], 1.1, 1.1, [100, 0]],
+      [letters[5], 1.1, 1.1, [100, 0]],
+      [letters[6], 1.1, 1.1, [100, 0]],
+      [letters[7], 1.1, 1.1, [100, 0]],
+      [letters[8], 1.1, 1.1, [100, 0]],
+      [letters[9], 1.1, 1.1, [100, 0]],
+    ]),
+  );
+
+  // The 50%-accurate key has only 20 observations, so accuracy mode falls
+  // back to the current speed queue and still focuses that slow key.
+  equal(printLessonKeys(lessonKeys), "[A]BCDEFGHIJ");
+});
