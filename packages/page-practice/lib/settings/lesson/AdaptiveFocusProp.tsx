@@ -10,10 +10,8 @@ import {
   Value,
 } from "@keybr/widget";
 import { type ReactNode } from "react";
-import { FormattedMessage, useIntl } from "react-intl";
 
 export function AdaptiveFocusProp(): ReactNode {
-  const { formatMessage } = useIntl();
   const { settings, updateSettings } = useSettings();
   const focusMode = settings.get(lessonProps.guided.focusMode);
   const targetAccuracy = settings.get(lessonProps.guided.targetAccuracy);
@@ -21,30 +19,22 @@ export function AdaptiveFocusProp(): ReactNode {
   const options = [
     {
       value: FocusMode.SPEED.id,
-      name: formatMessage({ id: "focusMode.speed", defaultMessage: "Speed" }),
+      name: "Speed",
     },
     {
       value: FocusMode.ACCURACY.id,
-      name: formatMessage({
-        id: "focusMode.accuracy",
-        defaultMessage: "Accuracy",
-      }),
+      name: "Accuracy",
     },
     {
       value: FocusMode.BOTH.id,
-      name: formatMessage({ id: "focusMode.both", defaultMessage: "Both" }),
+      name: "Both",
     },
   ];
 
   return (
     <>
       <FieldList>
-        <Field>
-          <FormattedMessage
-            id="settings.adaptiveFocus.label"
-            defaultMessage="Adaptive focus:"
-          />
-        </Field>
+        <Field>Adaptive focus:</Field>
         <Field>
           <OptionList
             options={options}
@@ -59,12 +49,7 @@ export function AdaptiveFocusProp(): ReactNode {
       </FieldList>
       {focusMode !== FocusMode.SPEED && (
         <FieldList>
-          <Field>
-            <FormattedMessage
-              id="settings.targetAccuracy.label"
-              defaultMessage="Target accuracy:"
-            />
-          </Field>
+          <Field>Target accuracy:</Field>
           <Field>
             <Range
               size={16}
@@ -86,10 +71,12 @@ export function AdaptiveFocusProp(): ReactNode {
       )}
       <Explainer>
         <Description>
-          <FormattedMessage
-            id="settings.adaptiveFocus.description"
-            defaultMessage="After all letter keys are unlocked, Speed preserves the original guided focus behavior. Accuracy focuses the least accurate well-sampled key below the target accuracy, falling back to current speed when all sampled keys are accurate enough. Both alternates two accuracy-focused lessons with one speed-focused lesson. During progressive key unlocking, the original speed-based focus is always preserved."
-          />
+          After all letter keys are unlocked, Speed preserves the original
+          guided focus behavior. Accuracy focuses the least accurate
+          well-sampled key below the target accuracy. Both uses two
+          accuracy-focused lessons for every one speed-focused lesson. During
+          progressive key unlocking, the original speed-based focus is always
+          preserved.
         </Description>
       </Explainer>
     </>
