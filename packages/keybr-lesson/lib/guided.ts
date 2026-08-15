@@ -117,7 +117,7 @@ export class GuidedLesson extends Lesson {
 
     let focusedKey: LessonKey | null;
     if (focusMode === FocusMode.ACCURACY) {
-      focusedKey = accuracyKey ?? speedKey;
+      focusedKey = accuracyKey;
     } else {
       // In combined mode, prefer accuracy for two lessons and speed for one.
       // Fall back to the other queue when the preferred queue is empty.
