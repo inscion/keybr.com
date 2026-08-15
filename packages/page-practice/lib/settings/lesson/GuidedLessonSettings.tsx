@@ -2,6 +2,7 @@ import { type GuidedLesson } from "@keybr/lesson";
 import { Description, Explainer, FieldSet } from "@keybr/widget";
 import { type ReactNode } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { AdaptiveFocusProp } from "./AdaptiveFocusProp.tsx";
 import { AlphabetSizeProp } from "./AlphabetSizeProp.tsx";
 import { KeyboardOrderProp } from "./KeyboardOrderProp.tsx";
 import { LessonLengthProp } from "./LessonLengthProp.tsx";
@@ -34,6 +35,7 @@ export function GuidedLessonSettings({
         })}
       >
         <TargetSpeedProp />
+        <AdaptiveFocusProp />
         <RecoverKeysProp />
         <KeyboardOrderProp />
         <NaturalWordsProp />
