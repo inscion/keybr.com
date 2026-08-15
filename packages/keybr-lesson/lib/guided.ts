@@ -56,7 +56,13 @@ export class GuidedLesson extends Lesson {
     const target = new Target(this.settings);
 
     const lessonKeys = new LessonKeys(
-      letters.map((letter) => LessonKey.from(keyStatsMap.get(letter), target)),
+      letters.map((letter) =>
+        LessonKey.from(
+          keyStatsMap.get(letter),
+          target,
+          keyStatsMap.results.length,
+        ),
+      ),
     );
 
     for (const lessonKey of lessonKeys) {
