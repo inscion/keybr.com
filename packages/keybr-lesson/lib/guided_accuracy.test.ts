@@ -59,7 +59,7 @@ test("ignore inaccurate keys until enough attempts are observed", () => {
     ]),
   );
 
-  // The 50%-accurate key has only 20 observations, so accuracy mode falls
-  // back to the current speed queue and still focuses that slow key.
-  equal(printLessonKeys(lessonKeys), "[A]BCDEFGHIJ");
+  // The 50%-accurate key has only 20 observations, so pure accuracy mode
+  // deliberately leaves the lesson unfocused rather than falling back to speed.
+  equal(printLessonKeys(lessonKeys), "ABCDEFGHIJ");
 });
