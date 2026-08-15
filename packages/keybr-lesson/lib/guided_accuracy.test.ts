@@ -6,6 +6,7 @@ import { equal } from "rich-assert";
 import { fakeKeyStatsMap, printLessonKeys } from "./fakes.ts";
 import { FocusMode } from "./focusmode.ts";
 import { GuidedLesson } from "./guided.ts";
+import { recentAccuracy } from "./key.ts";
 import { lessonProps } from "./settings.ts";
 
 test("focus least accurate key after all letters are unlocked", () => {
@@ -62,4 +63,32 @@ test("ignore inaccurate keys until enough attempts are observed", () => {
   // The 50%-accurate key has only 20 observations, so pure accuracy mode
   // deliberately leaves the lesson unfocused rather than falling back to speed.
   equal(printLessonKeys(lessonKeys), "ABCDEFGHIJ");
+});
+
+test("ignore accuracy samples outside the recent lesson window", () => {
+  const result = recentAccuracy(
+    [
+      {
+        index: 50,
+        timeStamp: 0,
+        hitCount: 0,
+        missCount: 100,
+        timeToType: 100,
+        filteredTimeToType: 100,
+      },
+      {
+        index: 250,
+        timeStamp: 0,
+        hitCount: 100,
+        missCount: 0,
+        timeToType: 100,
+        filteredTimeToType: 100,
+      },
+    ],
+    200,
+    100,
+  );
+
+  equal(result.attempts, 100);
+  equal(result.accuracy, 1);
 });
