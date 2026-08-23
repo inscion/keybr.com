@@ -125,12 +125,20 @@ export class GuidedLesson extends Lesson {
     if (focusMode === FocusMode.ACCURACY) {
       focusedKey = accuracyKey;
     } else {
-      // In combined mode, prefer accuracy for two lessons and speed for one.
-      // Fall back to the other queue when the preferred queue is empty.
+      // In combined mode, keep the two queues complementary. Speed owns keys
+      // that are currently below the target speed. Accuracy therefore selects
+      // only well-sampled inaccurate keys that are already at target speed.
+      const combinedAccuracyKey = this.#findAccuracyKey(
+        includedKeys.filter((key) => (key.confidence ?? 0) >= 1),
+        targetAccuracy,
+      );
+
+      // Prefer accuracy for two lessons and speed for one. Fall back to the
+      // other queue when the preferred queue is empty.
       const preferAccuracy = keyStatsMap.results.length % 3 !== 2;
       focusedKey = preferAccuracy
-        ? (accuracyKey ?? speedKey)
-        : (speedKey ?? accuracyKey);
+        ? (combinedAccuracyKey ?? speedKey)
+        : (speedKey ?? combinedAccuracyKey);
     }
 
     if (focusedKey != null) {
