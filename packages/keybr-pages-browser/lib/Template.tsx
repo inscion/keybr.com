@@ -1,5 +1,4 @@
 import { isPremiumUser, usePageData } from "@keybr/pages-shared";
-import { AdBanner } from "@keybr/thirdparties";
 import { PortalContainer, Toaster } from "@keybr/widget";
 import { type ReactNode } from "react";
 import { NavMenu } from "./NavMenu.tsx";
@@ -35,12 +34,6 @@ export function Template({
       <nav className={styles.nav}>
         <NavMenu currentPath={path} />
       </nav>
-      <div className={styles.topbar}>
-        <AdBanner name="BANNER_970X90_1" />
-      </div>
-      <div className={styles.sidebar}>
-        <AdBanner name="BANNER_160X600_1" />
-      </div>
       <EnvName />
     </div>
   );

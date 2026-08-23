@@ -5,6 +5,7 @@ import { type RNGStream } from "@keybr/rand";
 import { type KeyStatsMap } from "@keybr/result";
 import { type Settings } from "@keybr/settings";
 import { Dictionary, filterWordList } from "./dictionary.ts";
+import { FocusMode } from "./focusmode.ts";
 import { LessonKey, LessonKeys } from "./key.ts";
 import { Lesson } from "./lesson.ts";
 import { lessonProps } from "./settings.ts";
@@ -16,6 +17,8 @@ import {
   randomWords,
   uniqueWords,
 } from "./text/words.ts";
+
+const MIN_ACCURACY_ATTEMPTS = 100;
 
 export class GuidedLesson extends Lesson {
   readonly dictionary: Dictionary;
@@ -41,6 +44,8 @@ export class GuidedLesson extends Lesson {
   override update(keyStatsMap: KeyStatsMap) {
     const alphabetSize = this.settings.get(lessonProps.guided.alphabetSize);
     const recoverKeys = this.settings.get(lessonProps.guided.recoverKeys);
+    const focusMode = this.settings.get(lessonProps.guided.focusMode);
+    const targetAccuracy = this.settings.get(lessonProps.guided.targetAccuracy);
 
     const letters = this.#getLetters();
 
@@ -51,7 +56,13 @@ export class GuidedLesson extends Lesson {
     const target = new Target(this.settings);
 
     const lessonKeys = new LessonKeys(
-      letters.map((letter) => LessonKey.from(keyStatsMap.get(letter), target)),
+      letters.map((letter) =>
+        LessonKey.from(
+          keyStatsMap.get(letter),
+          target,
+          keyStatsMap.results.length,
+        ),
+      ),
     );
 
     for (const lessonKey of lessonKeys) {
@@ -92,19 +103,88 @@ export class GuidedLesson extends Lesson {
       }
     }
 
-    // Find the least confident of all included keys and focus on it.
-    const confidenceOf = (key: LessonKey): number => {
-      return recoverKeys ? (key.confidence ?? 0) : (key.bestConfidence ?? 0);
-    };
-    const weakestKeys = lessonKeys
-      .findIncludedKeys()
-      .filter((key) => confidenceOf(key) < 1)
-      .sort((a, b) => confidenceOf(a) - confidenceOf(b));
-    if (weakestKeys.length > 0) {
-      lessonKeys.focus(weakestKeys[0].letter);
+    const includedKeys = lessonKeys.findIncludedKeys();
+    const allLettersIncluded = lessonKeys.findExcludedKeys().length === 0;
+
+    // Preserve the stock speed-based curriculum while new letters are still
+    // being introduced. Accuracy-aware focus starts only after the alphabet
+    // is fully included so that an older inaccurate key cannot starve a newly
+    // unlocked key of practice.
+    if (!allLettersIncluded || focusMode === FocusMode.SPEED) {
+      const weakest = this.#findStockSpeedKey(includedKeys, recoverKeys);
+      if (weakest != null) {
+        lessonKeys.focus(weakest.letter);
+      }
+      return lessonKeys;
+    }
+
+    const accuracyKey = this.#findAccuracyKey(includedKeys, targetAccuracy);
+    const speedKey = this.#findCurrentSpeedKey(includedKeys);
+
+    let focusedKey: LessonKey | null;
+    if (focusMode === FocusMode.ACCURACY) {
+      focusedKey = accuracyKey;
+    } else {
+      // In combined mode, keep the two queues complementary. Speed owns keys
+      // that are currently below the target speed. Accuracy therefore selects
+      // only well-sampled inaccurate keys that are already at target speed.
+      const combinedAccuracyKey = this.#findAccuracyKey(
+        includedKeys.filter((key) => (key.confidence ?? 0) >= 1),
+        targetAccuracy,
+      );
+
+      // Prefer accuracy for two lessons and speed for one. Fall back to the
+      // other queue when the preferred queue is empty.
+      const preferAccuracy = keyStatsMap.results.length % 3 !== 2;
+      focusedKey = preferAccuracy
+        ? (combinedAccuracyKey ?? speedKey)
+        : (speedKey ?? combinedAccuracyKey);
+    }
+
+    if (focusedKey != null) {
+      lessonKeys.focus(focusedKey.letter);
     }
 
     return lessonKeys;
+  }
+
+  #findStockSpeedKey(
+    keys: readonly LessonKey[],
+    recoverKeys: boolean,
+  ): LessonKey | null {
+    const confidenceOf = (key: LessonKey): number => {
+      return recoverKeys ? (key.confidence ?? 0) : (key.bestConfidence ?? 0);
+    };
+    return (
+      [...keys]
+        .filter((key) => confidenceOf(key) < 1)
+        .sort((a, b) => confidenceOf(a) - confidenceOf(b))[0] ?? null
+    );
+  }
+
+  #findCurrentSpeedKey(keys: readonly LessonKey[]): LessonKey | null {
+    return (
+      [...keys]
+        .filter((key) => (key.confidence ?? 0) < 1)
+        .sort((a, b) => (a.confidence ?? 0) - (b.confidence ?? 0))[0] ?? null
+    );
+  }
+
+  #findAccuracyKey(
+    keys: readonly LessonKey[],
+    targetAccuracy: number,
+  ): LessonKey | null {
+    return (
+      [...keys]
+        .filter(
+          (key) =>
+            key.recentAttempts >= MIN_ACCURACY_ATTEMPTS &&
+            (key.recentAccuracy ?? 1) < targetAccuracy,
+        )
+        .sort(
+          (a, b) => (a.recentAccuracy ?? 1) - (b.recentAccuracy ?? 1),
+        )[0] ?? null
+    );
   }
 
   override generate(lessonKeys: LessonKeys, rng: RNGStream) {

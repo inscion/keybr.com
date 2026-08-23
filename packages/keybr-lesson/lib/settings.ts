@@ -7,6 +7,7 @@ import {
   numberProp,
   stringProp,
 } from "@keybr/settings";
+import { FocusMode } from "./focusmode.ts";
 import { LessonType } from "./lessontype.ts";
 
 export const lessonProps = {
@@ -20,6 +21,11 @@ export const lessonProps = {
       max: 1,
     }),
     recoverKeys: booleanProp("lesson.guided.recoverKeys", false),
+    focusMode: itemProp("lesson.guided.focusMode", FocusMode.ALL, FocusMode.SPEED),
+    targetAccuracy: numberProp("lesson.guided.targetAccuracy", 0.985, {
+      min: 0.9,
+      max: 1,
+    }),
   } as const,
   wordList: {
     wordListSize: numberProp("lesson.wordList.wordListSize", 1000, {

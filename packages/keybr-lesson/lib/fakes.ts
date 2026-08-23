@@ -1,5 +1,10 @@
 import { type Letter } from "@keybr/phonetic-model";
-import { type KeyStats, type KeyStatsMap, speedToTime } from "@keybr/result";
+import {
+  type KeySample,
+  type KeyStats,
+  type KeyStatsMap,
+  speedToTime,
+} from "@keybr/result";
 import { type Settings } from "@keybr/settings";
 import { type LessonKeys } from "./key.ts";
 import { Target } from "./target.ts";
@@ -10,11 +15,12 @@ export function fakeKeyStatsMap(
     letter: Letter,
     confidence: number | null,
     bestConfidence: number | null,
+    accuracyCounts?: readonly [hitCount: number, missCount: number],
   ][],
 ): KeyStatsMap {
   const target = new Target(settings);
   const map = new Map<Letter, KeyStats>(
-    items.map(([letter, confidence, bestConfidence]) => {
+    items.map(([letter, confidence, bestConfidence, accuracyCounts]) => {
       const timeToType =
         confidence == null
           ? null
@@ -23,11 +29,23 @@ export function fakeKeyStatsMap(
         bestConfidence == null
           ? null
           : speedToTime(target.targetSpeed) / bestConfidence;
+      const samples: KeySample[] = [];
+      if (accuracyCounts != null && timeToType != null) {
+        const [hitCount, missCount] = accuracyCounts;
+        samples.push({
+          index: 0,
+          timeStamp: 0,
+          hitCount,
+          missCount,
+          timeToType,
+          filteredTimeToType: timeToType,
+        });
+      }
       return [
         letter,
         {
           letter,
-          samples: [],
+          samples,
           timeToType,
           bestTimeToType,
         } as KeyStats,
