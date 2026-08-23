@@ -74,7 +74,9 @@ export function AdaptiveFocusProp(): ReactNode {
           After all letter keys are unlocked, Speed preserves the original
           guided focus behavior. Accuracy focuses the least accurate
           well-sampled key below the target accuracy. Both uses two
-          accuracy-focused lessons for every one speed-focused lesson. During
+          accuracy-focused lessons for every one speed-focused lesson; on its
+          accuracy turns it considers only keys that are already at or above
+          the target speed, leaving slower keys to the speed queue. During
           progressive key unlocking, the original speed-based focus is always
           preserved.
         </Description>
